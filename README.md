@@ -23,3 +23,11 @@ For example, the chunk of data on the scoreboard representing team damage does n
 ![](image stage/dmg1-1.png) >>> ![](image stage/dmg1-2.png)
 
 ---
+
+There are other aspects of the Scoreboard image that can be extracted. This includes **Match outcome**:
+
+![](image stage/outcome.png)
+
+Map, gamemode, and match time information can also be extracted:
+
+![](image stage/details.png)
