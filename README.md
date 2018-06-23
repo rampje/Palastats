@@ -13,6 +13,7 @@ There are two main scripts I'm using to build my dataset:
 Currently the Scoreboard screen at the end of a match looks like this:
 
 ![](saved/20180622%20160110.png)
+
 ---
 
 The strategy behind pulling data from an image like the one above is to define regions of the image to crop in order to read the data of interest. Some of the cropped regions require image processing techniques including [thresholding](https://docs.opencv.org/3.4/d7/d4d/tutorial_py_thresholding.html) in order for the optical character reader from pytesseract to read the data accurately. 
@@ -20,3 +21,5 @@ The strategy behind pulling data from an image like the one above is to define r
 For example, the chunk of data on the scoreboard representing team damage does not have a clear background. Applying some of the image processing functions available in OpenCV makes the image readable:
 
 ![](image stage/dmg1-1.png) >>> ![](image stage/dmg1-2.png)
+
+---
