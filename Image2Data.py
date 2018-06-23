@@ -10,7 +10,10 @@ img_stage_dir = 'D:/Projects/Paladins/Palastats/image stage/'
 
 crop_coords = { # this is based on my monitor's resolution 1920x1080
         'outcome': (50, 20, 280, 70),
+<<<<<<< HEAD
         'details': (50, 70, 900, 90),
+=======
+>>>>>>> 106163f8ada0aace21e459a9e46a35600e4615c3
         'healing1': (1490, 250, 1650, 580),
         'healing2': (1490, 560, 1650, 900),
         'damage1': (1225, 250, 1370, 580),
@@ -18,13 +21,20 @@ crop_coords = { # this is based on my monitor's resolution 1920x1080
         'kda1': (825, 250, 975, 580)
         }
 
+<<<<<<< HEAD
 # crop image in location based on metric selected
+=======
+>>>>>>> 106163f8ada0aace21e459a9e46a35600e4615c3
 def crop(image_path, saved_location, metric):
     image_obj = Image.open(image_path)
     cropped_image = image_obj.crop(crop_coords[metric])
     cropped_image.save(img_stage_dir + saved_location)
 
+<<<<<<< HEAD
 # extract data from healing and damage columns, get sum
+=======
+
+>>>>>>> 106163f8ada0aace21e459a9e46a35600e4615c3
 def parse_data(img_path, output_name):
     img = cv2.imread(img_path)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -39,9 +49,16 @@ def parse_data(img_path, output_name):
     nums = txt.split()
     nums = list(map(int, nums))
     total = sum(nums)
+<<<<<<< HEAD
     return(total)
 
 # get K/D/A column 
+=======
+    
+    return(total)
+
+
+>>>>>>> 106163f8ada0aace21e459a9e46a35600e4615c3
 def parse_kda(img_path, output_name):
     img = cv2.imread(img_path)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -55,8 +72,11 @@ def parse_kda(img_path, output_name):
     nums = txt.split()
     return(nums)
     
+<<<<<<< HEAD
 
 # initialize empty lists to be columns
+=======
+>>>>>>> 106163f8ada0aace21e459a9e46a35600e4615c3
 team_heals = []
 team_damage = []
 enemy_heals = []
@@ -85,8 +105,12 @@ for file in image_files:
     enemy_damage.append(parse_data(img_stage_dir + '/dmg2-1.png', 'dmg2-2.png'))
     outcome_col.append(outcome)
     timestamp_col.append(timestamp)
+<<<<<<< HEAD
 
 # put lists into dataframes
+=======
+    
+>>>>>>> 106163f8ada0aace21e459a9e46a35600e4615c3
 output_df = pd.DataFrame(
         {'timestamp': timestamp_col,
          'outcome': outcome_col,
@@ -95,5 +119,8 @@ output_df = pd.DataFrame(
          'team_heals': team_heals,
          'enemy_heals': enemy_heals})
     
+<<<<<<< HEAD
 # save dataframe to csv
 output_df.to_csv(img_dir + 'Match Data.csv')
+=======
+>>>>>>> 106163f8ada0aace21e459a9e46a35600e4615c3
