@@ -20,14 +20,14 @@ The strategy behind pulling data from an image like the one above is to define r
 
 For example, the chunk of data on the scoreboard representing team damage does not have a clear background. Applying some of the image processing functions available in OpenCV makes the image readable:
 
-![](image%stage/dmg1-1.png) >>> ![](image%stage/dmg1-2.png)
+![](image stage/dmg1-1.png) >>> ![](image stage/dmg1-2.png)
 
 ---
 
 There are other aspects of the Scoreboard image that can be extracted. This includes **Match outcome**:
 
-![](image%stage/outcome.png)
+![](image stage/outcome.png)
 
 Map, gamemode, and match time information can also be extracted:
 
-![](image%stage/details.png)
+![](image stage/details.png)
