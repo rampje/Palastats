@@ -27,19 +27,22 @@ def crop(image_path, saved_location, metric):
 # extract data from healing and damage columns, get sum
 def parse_data(img_path, output_name):
     img = cv2.imread(img_path)
+    img = cv2.GaussianBlur(img, (1,1 ), 0)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    _ , img = cv2.threshold(img,127,255,cv2.THRESH_BINARY)
+    _ , img = cv2.threshold(img,127,255,cv2.THRESH_BINARY_INV)
     #_ , img = cv2.threshold(img,127,255,cv2.THRESH_BINARY_INV)
     output_file = img_stage_dir + output_name
     cv2.imwrite(output_file, img)
-    txt = pyt.image_to_string(img)
+    txt = pyt.image_to_string(img, config = '-c tessedit_char_whitelist=0123456789')
     # clean text up
-    txt = txt.replace('\n', ' ').replace('c', '').replace(',', '')
+    txt = txt.replace('\n', ' ').replace('c', '').replace(',', '').replace('E','0')
     txt = txt.replace('[+]', '').replace('i', '').replace('.', '')
+    txt = txt.replace('N2', '').replace('HA0U', '0').replace('T155', '')
     nums = txt.split()
     nums = list(map(int, nums))
     total = sum(nums)
     return(total)
+    
 
 # get K/D/A column 
 def parse_kda(img_path, output_name):
@@ -79,12 +82,17 @@ for file in image_files:
     outcome = cv2.imread(img_stage_dir + '/outcome.png')
     outcome = pyt.image_to_string(outcome)
     
-    team_heals.append(parse_data(img_stage_dir + '/heal1-1.png', 'heal1-2.png'))
-    enemy_heals.append(parse_data(img_stage_dir + '/heal2-1.png', 'heal2-2.png'))    
+    heal1 = parse_data(img_stage_dir + '/heal1-1.png', 'heal1-2.png')
+    heal2 = parse_data(img_stage_dir + '/heal2-1.png', 'heal2-2.png')
+    team_heals.append(heal1)
+    enemy_heals.append(heal2)    
     team_damage.append(parse_data(img_stage_dir + '/dmg1-1.png', 'dmg1-2.png'))
     enemy_damage.append(parse_data(img_stage_dir + '/dmg2-1.png', 'dmg2-2.png'))
     outcome_col.append(outcome)
     timestamp_col.append(timestamp)
+    print(file)
+    print(heal1)
+    print(heal2)
 
 
 # put lists into dataframes
