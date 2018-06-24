@@ -1,0 +1,64 @@
+---
+title: "Palastats"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(reshape2)
+
+df <- read_csv('D:/Projects/Paladins/Palastats/AllData_Long.csv')
+
+# create match observation id
+timestamps <- as.character(unique(df$timestamp))
+ids <- 1:length(timestamps)
+
+df_wide <- df %>% 
+  mutate(id = as.character(timestamp),
+         player_num = as.integer(substr(metric, nchar(metric), nchar(metric)))) %>% 
+  mutate(metric = substr(metric, 0, nchar(metric)-1),
+         team = ifelse(player_num %in% 0:4, 'blue', 'red'))
+
+  
+df_wide <- df_wide %>% 
+  spread(metric, value) %>% 
+  separate(details, c('map', 'gametype', 'time', 'match_id'), ' / ') %>% 
+  separate(kda, c('kills', 'deaths', 'assists'), '/') %>% 
+  mutate(damage = as.integer(gsub(',', '', damage)),
+         healing = as.integer(gsub(',', '', healing)),
+         kills = as.integer(kills),
+         assists = as.integer(assists),
+         deaths = as.integer(deaths))
+
+df_wide$id <- plyr::mapvalues(df_wide$id, from = timestamps, to = ids)
+```
+
+```{r}
+match_df <- df_wide %>% 
+  select(id, map, outcome, time, team,
+         healing, damage, kills, deaths, assists) 
+match_df$deaths[is.na(match_df$deaths)] <- 0
+```
+
+
+```{r}
+match_df2 <- match_df %>% 
+  select(outcome, id, team, deaths) %>% 
+  group_by(outcome, id, team) %>% 
+  summarise_all(funs(sum)) %>% 
+  spread(team, deaths)
+```
+
+
+```{r echo=FALSE}
+match_df2 %>% 
+  filter(blue < 100) %>% 
+  mutate(outcome = ifelse(outcome=='VICTORY', 'Blue Win', 'Red Win')) %>% 
+  ggplot(aes(x=red, y=blue, colour=outcome)) +
+  geom_point(size=2) +
+  geom_abline(intercept=0) +
+  xlab('Red Team Deaths') +
+  ylab('Blue Team Deaths') 
+  
+```
+
