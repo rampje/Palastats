@@ -3,6 +3,7 @@ title: "Palastats"
 output: html_document
 ---
 
+The first chunk of code cleans up the data as it was outputted from python and saves it into a reasonable table format
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse)
 library(reshape2)
@@ -33,7 +34,7 @@ df_wide <- df_wide %>%
 df_wide$id <- plyr::mapvalues(df_wide$id, from = timestamps, to = ids)
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 match_df <- df_wide %>% 
   select(id, map, outcome, time, team,
          healing, damage, kills, deaths, assists) 
@@ -41,7 +42,7 @@ match_df$deaths[is.na(match_df$deaths)] <- 0
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 match_df2 <- match_df %>% 
   select(outcome, id, team, deaths) %>% 
   group_by(outcome, id, team) %>% 
@@ -50,15 +51,38 @@ match_df2 <- match_df %>%
 ```
 
 
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+g1 <- gg_color_hue <- function(n) {
+     hues = seq(15, 375, length = n + 1)
+     hcl(h = hues, l = 65, c = 100)[1:n]
+ }
+
 match_df2 %>% 
+  ungroup(outcome) %>% 
   filter(blue < 100) %>% 
   mutate(outcome = ifelse(outcome=='VICTORY', 'Blue Win', 'Red Win')) %>% 
   ggplot(aes(x=red, y=blue, colour=outcome)) +
   geom_point(size=2) +
   geom_abline(intercept=0) +
   xlab('Red Team Deaths') +
-  ylab('Blue Team Deaths') 
-  
+  ylab('Blue Team Deaths')  +
+  #theme_minimal() +
+  theme(
+    legend.title = element_blank(),
+    legend.position = 'top',
+    axis.text.x = element_text(colour='#F8766D', face='bold'),
+    axis.title.x = element_text(colour='#F8766D', face='bold'),
+    axis.text.y = element_text(colour='#00BFC4', face='bold'),
+    axis.title.y = element_text(colour='#00BFC4', face='bold')
+  ) +
+  scale_color_manual(values = rev(gg_color_hue(2))) +
+  ggtitle('Dead teams lose games')
+    
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+ggsave('D:/Projects/Paladins/Palastats/example/graph1.png', width = 3, height = 3, units='in')
+
+write_csv(df_wide, 'D:/Projects/Paladins/Palastats/AllData_Final.csv')
 ```
 
