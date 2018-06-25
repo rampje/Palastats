@@ -10,9 +10,9 @@ There are two main scripts I'm using to build my dataset:
 
 ---
 
-Currently the Scoreboard screen at the end of a match looks like this:
+Below is an example of the Scoreboard at the end of a match. The green frames represent all the sections that are cropped and processed for character recognition:
 
-![](saved/20180622%20160110.png)
+![](example/template.png)
 
 ---
 
@@ -20,14 +20,16 @@ The strategy behind pulling data from an image like the one above is to define r
 
 For example, the chunk of data on the scoreboard representing team damage does not have a clear background. Applying some of the image processing functions available in OpenCV makes the image readable:
 
-![](image%20stage/dmg1-1.png) >>> ![](image%20stage/dmg1-2.png)
+Before          |  After 
+:-------------------------:|:-------------------------:
+![](example/outcome1.png)  |  ![](example/outcome2.png)
+![](example/details1.png)  |  ![](example/details2.png) 
+
 
 ---
 
-There are other aspects of the Scoreboard image that can be extracted. This includes **Match outcome**:
+## Analysis
 
-![](image%20stage/outcome.png)
+I'm building out an R Markdown file exploring the data set. Currently it's a work in progress.
 
-Map, gamemode, and match time information can also be extracted:
-
-![](image%20stage/details.png)
+![](example/graph1.png)
