@@ -3,62 +3,32 @@ title: "Palastats"
 output: html_document
 ---
 
-The first chunk of code cleans up the data as it was outputted from python and saves it into a reasonable table format
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse)
-library(reshape2)
 
-df <- read_csv('D:/Projects/Paladins/Palastats/AllData_Long.csv')
+df_wide <- read_csv('D:/Projects/Paladins/Palastats/AllData_Final.csv')
 
-# create match observation id
-timestamps <- as.character(unique(df$timestamp))
-ids <- 1:length(timestamps)
-
-df_wide <- df %>% 
-  mutate(id = as.character(timestamp),
-         player_num = as.integer(substr(metric, nchar(metric), nchar(metric)))) %>% 
-  mutate(metric = substr(metric, 0, nchar(metric)-1),
-         team = ifelse(player_num %in% 0:4, 'blue', 'red'))
-
-  
-df_wide <- df_wide %>% 
-  spread(metric, value) %>% 
-  separate(details, c('map', 'gametype', 'time', 'match_id'), ' / ') %>% 
-  separate(kda, c('kills', 'deaths', 'assists'), '/') %>% 
-  mutate(damage = as.integer(gsub(',', '', damage)),
-         healing = as.integer(gsub(',', '', healing)),
-         kills = as.integer(kills),
-         assists = as.integer(assists),
-         deaths = as.integer(deaths))
-
-df_wide$id <- plyr::mapvalues(df_wide$id, from = timestamps, to = ids)
+g1 <- gg_color_hue <- function(n) {
+     hues = seq(15, 375, length = n + 1)
+     hcl(h = hues, l = 65, c = 100)[1:n]
+ }
 ```
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 match_df <- df_wide %>% 
-  select(id, map, outcome, time, team,
+  select(id, map, outcome, fixed_time, team, gametype,
          healing, damage, kills, deaths, assists) 
 match_df$deaths[is.na(match_df$deaths)] <- 0
 ```
 
 
-```{r message=FALSE, warning=FALSE, include=FALSE}
-match_df2 <- match_df %>% 
-  select(outcome, id, team, deaths) %>% 
-  group_by(outcome, id, team) %>% 
-  summarise_all(funs(sum)) %>% 
-  spread(team, deaths)
-```
-
-
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-g1 <- gg_color_hue <- function(n) {
-     hues = seq(15, 375, length = n + 1)
-     hcl(h = hues, l = 65, c = 100)[1:n]
- }
-
-match_df2 %>% 
-  ungroup(outcome) %>% 
+match_df %>% 
+  select(outcome, id, team, deaths, gametype) %>% 
+  group_by(outcome, id, team, gametype) %>% 
+  summarise_all(funs(sum)) %>% 
+  spread(team, deaths) %>% 
+  ungroup(outcome, gametype) %>% 
   filter(blue < 100) %>% 
   mutate(outcome = ifelse(outcome=='VICTORY', 'Blue Win', 'Red Win')) %>% 
   ggplot(aes(x=red, y=blue, colour=outcome)) +
@@ -76,13 +46,112 @@ match_df2 %>%
     axis.title.y = element_text(colour='#00BFC4', face='bold')
   ) +
   scale_color_manual(values = rev(gg_color_hue(2))) +
+  #ggtitle('Dead teams lose games') +
+  facet_grid(.~gametype) +
   ggtitle('Dead teams lose games')
-    
 ```
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 ggsave('D:/Projects/Paladins/Palastats/example/graph1.png', width = 3, height = 3, units='in')
+```
 
-write_csv(df_wide, 'D:/Projects/Paladins/Palastats/AllData_Final.csv')
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+match_df %>% 
+  select(outcome, id, team, deaths, gametype,
+         fixed_time) %>% 
+  group_by(outcome, id, team, gametype, fixed_time) %>% 
+  summarise_all(funs(sum)) %>% 
+  spread(team, deaths) %>% 
+  ungroup(outcome, gametype) %>% 
+  mutate(diff_deaths = blue - red) %>%  
+  filter(blue < 100) %>% 
+  mutate(outcome = ifelse(outcome=='VICTORY', 'Blue Win', 'Red Win')) %>% 
+  ggplot(aes(x=fixed_time, y=diff_deaths, colour=outcome)) +
+  geom_point(size=2) +
+  geom_abline(intercept=0) +
+  xlab('Match Duration') +
+  ylab('Blue deaths Minus Red deaths')  +
+  #theme_minimal() +
+  theme(
+    legend.title = element_blank(),
+    title = element_text(size=4),
+    legend.position = 'top',
+    axis.text.x = element_text(size = 6,  face='bold'),
+    #axis.title.x = element_text(colour='#F8766D', face='bold'),
+    axis.text.y = element_text(size = 6,  face='bold')
+    #axis.title.y = element_text(colour='#00BFC4', face='bold')
+  ) +
+  scale_color_manual(values = rev(gg_color_hue(2))) +
+  ggtitle("Deathmatch is shorter than Siege unless somebody's getting rolled") +
+  facet_grid(.~gametype) + 
+  geom_hline(yintercept=0)
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+ggsave('D:/Projects/Paladins/Palastats/example/graph2.png', width = 3, height = 3, units='in')
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+match_df %>% 
+  select(outcome, id, team, damage, gametype,
+         fixed_time) %>% 
+  group_by(outcome, id, team, gametype, fixed_time) %>% 
+  summarise_all(funs(sum)) %>% 
+  spread(team, damage) %>% 
+  ungroup(outcome, gametype) %>% 
+  mutate(diff_damage = blue - red) %>%  
+  filter(diff_damage > -400000) %>% 
+  mutate(outcome = ifelse(outcome=='VICTORY', 'Blue Win', 'Red Win')) %>% 
+  ggplot(aes(x=fixed_time, y=diff_damage, colour=outcome)) +
+  geom_point(size=2) +
+  xlab('Match Duration') +
+  ylab('Blue damage Minus Red damage')  +
+  #theme_minimal() +
+  theme(
+    legend.title = element_blank(),
+    #title = element_text(size=4),
+    legend.position = 'top'
+    #axis.text.x = element_text(size = 6,  face='bold'),
+    #axis.title.x = element_text(colour='#F8766D', face='bold'),
+    #axis.text.y = element_text(size = 6,  face='bold')
+    #axis.title.y = element_text(colour='#00BFC4', face='bold')
+  ) +
+  scale_color_manual(values = rev(gg_color_hue(2))) +
+  #ggtitle("Deathmatch is shorter than Siege unless somebody's getting rolled") +
+  facet_grid(.~gametype) + 
+  geom_hline(yintercept=0)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+match_df %>% 
+  select(outcome, id, team, healing, gametype,
+         fixed_time) %>% 
+  group_by(outcome, id, team, gametype, fixed_time) %>% 
+  summarise_all(funs(sum)) %>% 
+  spread(team, healing) %>% 
+  ungroup(outcome, gametype) %>% 
+  mutate(diff_healing = blue - red) %>%  
+  filter(diff_healing > -400000) %>% 
+  mutate(outcome = ifelse(outcome=='VICTORY', 'Blue Win', 'Red Win')) %>% 
+  ggplot(aes(x=fixed_time, y=diff_healing, colour=outcome)) +
+  geom_point(size=2) +
+  xlab('Match Duration') +
+  ylab('Blue healing Minus Red healing')  +
+  #theme_minimal() +
+  theme(
+    legend.title = element_blank(),
+    #title = element_text(size=4),
+    legend.position = 'top'
+    #axis.text.x = element_text(size = 6,  face='bold'),
+    #axis.title.x = element_text(colour='#F8766D', face='bold'),
+    #axis.text.y = element_text(size = 6,  face='bold')
+    #axis.title.y = element_text(colour='#00BFC4', face='bold')
+  ) +
+  scale_color_manual(values = rev(gg_color_hue(2))) +
+  #ggtitle("Deathmatch is shorter than Siege unless somebody's getting rolled") +
+  facet_grid(.~gametype) + 
+  geom_hline(yintercept=0)
 ```
 
