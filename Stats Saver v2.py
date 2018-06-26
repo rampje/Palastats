@@ -2,6 +2,9 @@ import pyautogui as p
 import pytesseract as pyt
 import datetime
 import time
+import cv2
+import pandas as pd
+from PIL import Image
 
 pyt.pytesseract.tesseract_cmd = 'C:/Program Files (x86)/Tesseract-OCR/tesseract'
 img_dir = 'D:/Projects/Paladins/Palastats/saved/'
@@ -27,7 +30,6 @@ def process_image(img_path):
     img = cv2.GaussianBlur(img, (1,1 ), 0)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     _ , img = cv2.threshold(img,127,255,cv2.THRESH_BINARY_INV)
-    #_ , img = cv2.threshold(img,127,255,cv2.THRESH_BINARY_INV)
     cv2.imwrite(img_path, img)
     txt = pyt.image_to_string(img)#config = '--psm 8 -c tessedit_char_whitelist=0123456789')
     return(txt)
@@ -53,8 +55,7 @@ for row in coords_df.iterrows():
         image_metrics.append(row[0] + str(x))
 		
 
-
-#p.click(1600, 80) # re-queue
+data = []
 while True:
     shot = p.screenshot(region=(50, 20, 230, 50))
     txt = pyt.image_to_string(shot)
@@ -65,25 +66,32 @@ while True:
         outputfile = img_dir + timestamp + '.png'
         time.sleep(2)
         p.screenshot(outputfile)
-		
-		outcome = image_obj.crop((50, 20, 280, 70))
-		outcome.save(img_stage_dir + 'outcome.png')
-		o = process_image(img_stage_dir + 'outcome.png')
-		details = image_obj.crop((50, 70, 900, 90))
-		details.save(img_stage_dir + 'details.png')
-		d = process_image(img_stage_dir + 'details.png')
-		
-		for row in coords_df.iterrows():
-			crop(image_obj, row[1][0], row[1][1], row[0])
-			timestamp = file.replace('.png', '')
         
-		for x in image_metrics:
-			txt = process_image(img_stage_dir + x + '.png')
-			data.append([timestamp, x, txt, o, d])
-			print([timestamp, x, txt, o, d])
-			
+        image_obj = Image.open(outputfile) # for now
+        
+        outcome = image_obj.crop((50, 20, 280, 70))
+        outcome.save(img_stage_dir + 'outcome.png')
+        o = process_image(img_stage_dir + 'outcome.png')
+        details = image_obj.crop((50, 70, 900, 90))
+        details.save(img_stage_dir + 'details.png')
+        d = process_image(img_stage_dir + 'details.png')
+        
+        for row in coords_df.iterrows():
+            crop(image_obj, row[1][0], row[1][1], row[0])
+        
+        for x in image_metrics:
+            txt = process_image(img_stage_dir + x + '.png')
+            data.append([timestamp, x, txt, o, d])
+            print([timestamp, x, txt, o, d])
+        
         break
 		
 
 # save built list to dataframe
 new_df = pd.DataFrame(data, columns=['timestamp','metric','value','outcome','details'])
+
+# load in main df
+full_df = pd.read_csv('D:/Projects/Paladins/Palastats/AllData_Long.csv',encoding = 'cp1252')
+# join new df to main
+full_df = full_df.merge(new_df, how='outer')
+full_df.to_csv('D:/Projects/Paladins/Palastats/AllData_Long.csv', index = False)
