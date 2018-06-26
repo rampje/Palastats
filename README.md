@@ -33,3 +33,5 @@ Before          |  After
 I'm building out an R Markdown file exploring the data set. Currently it's a work in progress.
 
 ![](example/graph1.png)
+
+![](example/graph2.png)
