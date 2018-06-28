@@ -5,8 +5,13 @@ output: html_document
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse)
+library(reshape2)
 
-df_wide <- read_csv('D:/Projects/Paladins/Palastats/AllData_Final.csv')
+df_wide <- read_csv('D:/Projects/Paladins/Palastats/AllData_Final.csv') %>% 
+  mutate(kills = ifelse(is.na(kills), 0, kills),
+         damage = ifelse(is.na(damage), 0, damage))
+
+df_wide$kills[df_wide$kills==7117 ] <- 7
 
 g1 <- gg_color_hue <- function(n) {
      hues = seq(15, 375, length = n + 1)
@@ -19,11 +24,12 @@ match_df <- df_wide %>%
   select(id, map, outcome, fixed_time, team, gametype,
          healing, damage, kills, deaths, assists) 
 match_df$deaths[is.na(match_df$deaths)] <- 0
+match_df$healing[is.na(match_df$healing)] <- 0
 ```
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-match_df %>% 
+p1 <- match_df %>% 
   select(outcome, id, team, deaths, gametype) %>% 
   group_by(outcome, id, team, gametype) %>% 
   summarise_all(funs(sum)) %>% 
@@ -49,15 +55,22 @@ match_df %>%
   #ggtitle('Dead teams lose games') +
   facet_grid(.~gametype) +
   ggtitle('Dead teams lose games')
+
+p1
 ```
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-ggsave('D:/Projects/Paladins/Palastats/example/graph1.png', width = 3, height = 3, units='in')
+ggsave('D:/Projects/Paladins/Palastats/example/graph1.png', 
+       p1 + theme(
+         axis.text.x = element_text(size = 6,  face='bold'),
+         axis.text.y = element_text(size = 6,  face='bold')
+       ),
+         width = 3, height = 3, units='in')
 ```
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-match_df %>% 
+p2 <- match_df %>% 
   select(outcome, id, team, deaths, gametype,
          fixed_time) %>% 
   group_by(outcome, id, team, gametype, fixed_time) %>% 
@@ -75,83 +88,101 @@ match_df %>%
   #theme_minimal() +
   theme(
     legend.title = element_blank(),
-    title = element_text(size=4),
-    legend.position = 'top',
-    axis.text.x = element_text(size = 6,  face='bold'),
+    #title = element_text(size=4),
+    legend.position = 'top'
+    #axis.text.x = element_text(size = 6,  face='bold'),
     #axis.title.x = element_text(colour='#F8766D', face='bold'),
-    axis.text.y = element_text(size = 6,  face='bold')
+    #axis.text.y = element_text(size = 6,  face='bold')
     #axis.title.y = element_text(colour='#00BFC4', face='bold')
   ) +
   scale_color_manual(values = rev(gg_color_hue(2))) +
   ggtitle("Deathmatch is shorter than Siege unless somebody's getting rolled") +
   facet_grid(.~gametype) + 
   geom_hline(yintercept=0)
+
+p2
 ```
 
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-ggsave('D:/Projects/Paladins/Palastats/example/graph2.png', width = 3, height = 3, units='in')
+ggsave('D:/Projects/Paladins/Palastats/example/graph2.png',
+       plot = p2 + theme(
+         title = element_text(size=4),
+         axis.text.x = element_text(size = 6,  face='bold'),
+         axis.text.y = element_text(size = 6,  face='bold')
+       ),
+         width = 3, height = 3, units='in')
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+rm_names <- c('rampje', 'Rhenzx', 'W OceanLaboratory', 'W Saryuh', 
+              'Wsaryuh', 'W OceanLaboratory')
+
+champ_df <- df_wide %>% 
+  select(timestamp, outcome, champion, kills, healing,
+         deaths, damage, team, objective, name) %>% 
+  filter(!(name %in% rm_names)) %>% 
+  filter(!grepl('rampje', name))
+
+champ_df$kills[is.na(champ_df$kills)] <- 0
+champ_df$damage[is.na(champ_df$deaths)] <- 0
+champ_df$healing[is.na(champ_df$healing)] <- 0
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-match_df %>% 
-  select(outcome, id, team, damage, gametype,
-         fixed_time) %>% 
-  group_by(outcome, id, team, gametype, fixed_time) %>% 
-  summarise_all(funs(sum)) %>% 
-  spread(team, damage) %>% 
-  ungroup(outcome, gametype) %>% 
-  mutate(diff_damage = blue - red) %>%  
-  filter(diff_damage > -400000) %>% 
-  mutate(outcome = ifelse(outcome=='VICTORY', 'Blue Win', 'Red Win')) %>% 
-  ggplot(aes(x=fixed_time, y=diff_damage, colour=outcome)) +
-  geom_point(size=2) +
-  xlab('Match Duration') +
-  ylab('Blue damage Minus Red damage')  +
-  #theme_minimal() +
-  theme(
-    legend.title = element_blank(),
-    #title = element_text(size=4),
-    legend.position = 'top'
-    #axis.text.x = element_text(size = 6,  face='bold'),
-    #axis.title.x = element_text(colour='#F8766D', face='bold'),
-    #axis.text.y = element_text(size = 6,  face='bold')
-    #axis.title.y = element_text(colour='#00BFC4', face='bold')
-  ) +
-  scale_color_manual(values = rev(gg_color_hue(2))) +
-  #ggtitle("Deathmatch is shorter than Siege unless somebody's getting rolled") +
-  facet_grid(.~gametype) + 
-  geom_hline(yintercept=0)
+top_champs <- champ_df %>% 
+  select(champion, kills, damage, healing) %>% 
+  mutate(count=1) %>% 
+  group_by(champion) %>% 
+  summarise_all(funs(mean, sum)) %>% 
+  mutate(kills = kills_mean) %>% 
+  select(-kills_sum, damage_sum, -count_mean, kills_mean, healing_sum)
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-match_df %>% 
-  select(outcome, id, team, healing, gametype,
-         fixed_time) %>% 
-  group_by(outcome, id, team, gametype, fixed_time) %>% 
-  summarise_all(funs(sum)) %>% 
-  spread(team, healing) %>% 
-  ungroup(outcome, gametype) %>% 
-  mutate(diff_healing = blue - red) %>%  
-  filter(diff_healing > -400000) %>% 
-  mutate(outcome = ifelse(outcome=='VICTORY', 'Blue Win', 'Red Win')) %>% 
-  ggplot(aes(x=fixed_time, y=diff_healing, colour=outcome)) +
-  geom_point(size=2) +
-  xlab('Match Duration') +
-  ylab('Blue healing Minus Red healing')  +
-  #theme_minimal() +
-  theme(
-    legend.title = element_blank(),
-    #title = element_text(size=4),
-    legend.position = 'top'
-    #axis.text.x = element_text(size = 6,  face='bold'),
-    #axis.title.x = element_text(colour='#F8766D', face='bold'),
-    #axis.text.y = element_text(size = 6,  face='bold')
-    #axis.title.y = element_text(colour='#00BFC4', face='bold')
-  ) +
-  scale_color_manual(values = rev(gg_color_hue(2))) +
-  #ggtitle("Deathmatch is shorter than Siege unless somebody's getting rolled") +
-  facet_grid(.~gametype) + 
-  geom_hline(yintercept=0)
+top_champs %>% 
+  mutate(kills = round(kills, 1),
+         `Sample Size` = ifelse(count_sum < 10, '< 10', 
+                                ifelse(count_sum < 21, '10-20',
+                                       ifelse(count_sum < 36, '21-35',
+                                              ifelse(count_sum < 51, '36-50', 
+                                                     ifelse(count_sum < 71, '51-70')))))) %>% 
+  ggplot(aes(x=reorder(champion, kills), y=kills, fill=`Sample Size`)) +
+  geom_bar(stat='identity') + 
+  coord_flip()  +
+  ggtitle('Average Number of kills by Champion') +
+  xlab('Champion') + ylab('Number of kills')
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+top_champs %>% 
+  mutate(damage = round(damage_mean, 1),
+         `Sample Size` = ifelse(count_sum < 10, '< 10', 
+                                ifelse(count_sum < 21, '10-20',
+                                       ifelse(count_sum < 36, '21-35',
+                                              ifelse(count_sum < 51, '36-50', 
+                                                     ifelse(count_sum < 71, '51-70')))))) %>% 
+  ggplot(aes(x=reorder(champion,damage), y=damage, fill=`Sample Size`)) +
+  geom_bar(stat='identity') + 
+  coord_flip()  +
+  ggtitle('Average damage by Champion') +
+  xlab('Champion') + ylab('Amount of damage')
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+top_champs %>% 
+  mutate(healing = round(healing_mean, 1),
+         `Sample Size` = ifelse(count_sum < 10, '< 10', 
+                                ifelse(count_sum < 21, '10-20',
+                                       ifelse(count_sum < 36, '21-35',
+                                              ifelse(count_sum < 51, '36-50', 
+                                                     ifelse(count_sum < 71, '51-70')))))) %>% 
+  filter(healing != 0) %>% 
+  ggplot(aes(x=reorder(champion,healing), y=healing, fill=`Sample Size`)) +
+  geom_bar(stat='identity') + 
+  coord_flip()  +
+  ggtitle('Average healing by Champion') +
+  xlab('Champion') + ylab('Amount of healing')
 ```
 
